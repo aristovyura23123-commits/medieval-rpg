@@ -1,0 +1,2060 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Пепел и Сталь — Dark Medieval RPG</title>
+  <!-- Telegram Mini App SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Cinzel & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            obsidian: '#12100e',
+            stoneDark: '#1c1917',
+            parchmentDark: '#292524',
+            goldDim: '#d4af37',
+            goldBright: '#f5d061',
+            bloodRed: '#991b1b',
+            bloodBright: '#dc2626',
+            emeraldHerb: '#059669',
+            emeraldBright: '#10b981'
+          },
+          fontFamily: {
+            serif: ['Cinzel', 'Georgia', 'serif'],
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    :root {
+      --bg-obsidian: #12100e;
+      --bg-stone: #1c1917;
+      --bg-parchment: #292524;
+      --accent-gold: #d4af37;
+      --hp-red: #991b1b;
+      --herb-emerald: #059669;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      background-color: #12100e;
+      color: #e7e5e4;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .font-medieval {
+      font-family: 'Cinzel', Georgia, 'Times New Roman', serif;
+      letter-spacing: 0.04em;
+    }
+
+    /* Medieval ornamental borders & shadows */
+    .medieval-card {
+      background: linear-gradient(165deg, #1c1917 0%, #151311 100%);
+      border: 1px solid #3f3832;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(212, 175, 55, 0.12);
+    }
+
+    .medieval-card-parchment {
+      background: linear-gradient(165deg, #292524 0%, #1c1917 100%);
+      border: 1px solid #4a423b;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(212, 175, 55, 0.18);
+    }
+
+    .medieval-gold-border {
+      border: 1px solid rgba(212, 175, 55, 0.55);
+      box-shadow: 0 0 12px rgba(212, 175, 55, 0.12), inset 0 1px 0 rgba(255, 230, 140, 0.2);
+    }
+
+    .medieval-btn {
+      transition: transform 0.1s ease, filter 0.15s ease, box-shadow 0.15s ease;
+    }
+    .medieval-btn:active:not(:disabled) {
+      transform: scale(0.96);
+    }
+    .medieval-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    /* Custom Scrollbar for inner content */
+    .custom-scroll::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #12100e;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #3f3832;
+      border-radius: 2px;
+    }
+
+    /* Screen Shake Animation for Critical Hits & Heavy Damage */
+    @keyframes screenShake {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      15% { transform: translate(-7px, -5px) rotate(-1.2deg); }
+      30% { transform: translate(7px, 4px) rotate(1.2deg); }
+      45% { transform: translate(-6px, 5px) rotate(-0.8deg); }
+      60% { transform: translate(6px, -4px) rotate(0.8deg); }
+      75% { transform: translate(-4px, 2px) rotate(-0.4deg); }
+    }
+
+    .shake-screen {
+      animation: screenShake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    /* Floating Damage Text Animation */
+    @keyframes floatUpFade {
+      0% {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(0.75);
+      }
+      25% {
+        opacity: 1;
+        transform: translate(-50%, -18px) scale(1.15);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -58px) scale(0.95);
+      }
+    }
+
+    .floating-dmg {
+      position: absolute;
+      left: 50%;
+      top: 38%;
+      pointer-events: none;
+      z-index: 60;
+      font-family: 'Cinzel', Georgia, serif;
+      font-weight: 800;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.9);
+      animation: floatUpFade 1.05s ease-out forwards;
+      white-space: nowrap;
+    }
+
+    /* Pulse & Ember glow */
+    @keyframes emberPulse {
+      0%, 100% { filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.45)); }
+      50% { filter: drop-shadow(0 0 14px rgba(234, 88, 12, 0.8)); }
+    }
+    .ember-glow {
+      animation: emberPulse 2.4s infinite ease-in-out;
+    }
+
+    @keyframes diceRollAnim {
+      0% { transform: rotate(0deg) scale(1); }
+      25% { transform: rotate(-18deg) scale(1.12); }
+      50% { transform: rotate(18deg) scale(0.94); }
+      75% { transform: rotate(-10deg) scale(1.06); }
+      100% { transform: rotate(0deg) scale(1); }
+    }
+    .rolling-dice {
+      animation: diceRollAnim 0.45s ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-[#12100e] text-stone-200 select-none">
+
+  <!-- Main Mobile Viewport Wrapper (Strictly 100dvh, No Horizontal Scroll) -->
+  <div id="app-root" class="relative w-full max-w-md mx-auto h-[100dvh] flex flex-col justify-between bg-[#12100e] overflow-hidden border-x border-stone-800/60 shadow-2xl">
+
+    <!-- ================= TOP PINNED PLAYER HUD ================= -->
+    <header class="shrink-0 bg-[#1c1917] border-b border-stone-800 px-3.5 pt-2.5 pb-2.5 z-30 shadow-lg">
+      <div class="flex items-center justify-between gap-2 mb-2">
+        <!-- Avatar + Name + Class + Level -->
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="relative w-11 h-11 rounded-lg bg-[#292524] border border-[#d4af37]/60 flex items-center justify-center shrink-0 shadow-inner">
+            <i class="fa-solid fa-helmet-safety text-xl text-[#d4af37]"></i>
+            <span id="hud-level-badge" class="absolute -bottom-1.5 -right-1.5 bg-[#12100e] text-[#d4af37] border border-[#d4af37]/70 font-medieval text-[10px] font-bold px-1.5 py-0.2 rounded">
+              Ур.1
+            </span>
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <h1 id="hud-player-name" class="font-medieval text-sm font-bold text-stone-100 truncate">Странник</h1>
+              <span id="hud-stat-alert" class="hidden bg-[#d4af37] text-[#12100e] text-[10px] font-extrabold px-1.5 py-0.5 rounded-full animate-pulse cursor-pointer" onclick="app.switchTab('hero')">
+                +Очки
+              </span>
+            </div>
+            <p id="hud-player-title" class="text-[11px] text-stone-400 truncate">Мечник Пепла • Сила: <span id="hud-str">5</span></p>
+          </div>
+        </div>
+
+        <!-- Gold & Quick Potions & Bot Sync -->
+        <div class="flex items-center gap-1.5 shrink-0">
+          <div class="bg-[#12100e] border border-stone-800 rounded-lg px-2.5 py-1 flex items-center gap-1.5" title="Золотые кроны">
+            <i class="fa-solid fa-coins text-[#d4af37] text-xs"></i>
+            <span id="hud-gold" class="font-medieval text-xs font-bold text-[#d4af37]">120</span>
+          </div>
+          <div class="bg-[#12100e] border border-stone-800 rounded-lg px-2 py-1 flex items-center gap-1" title="Целебные эликсиры">
+            <i class="fa-solid fa-flask text-emerald-500 text-xs"></i>
+            <span id="hud-potions" class="font-mono text-xs font-bold text-emerald-400">2</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bars: HP & XP -->
+      <div class="grid grid-cols-12 gap-2 items-center">
+        <!-- HP Bar (7 cols) -->
+        <div class="col-span-7">
+          <div class="flex justify-between text-[10px] font-semibold mb-0.5">
+            <span class="text-red-400 flex items-center gap-1"><i class="fa-solid fa-heart text-[9px]"></i> Здоровье</span>
+            <span id="hud-hp-text" class="text-stone-300 font-mono">100 / 100</span>
+          </div>
+          <div class="w-full h-2.5 bg-[#12100e] rounded-full overflow-hidden border border-stone-800 p-[1px]">
+            <div id="hud-hp-bar" class="h-full bg-gradient-to-r from-[#7f1d1d] to-[#dc2626] rounded-full transition-all duration-300" style="width: 100%"></div>
+          </div>
+        </div>
+
+        <!-- XP Bar (5 cols) -->
+        <div class="col-span-5">
+          <div class="flex justify-between text-[10px] font-semibold mb-0.5">
+            <span class="text-[#d4af37] flex items-center gap-1"><i class="fa-solid fa-star text-[9px]"></i> Опыт</span>
+            <span id="hud-xp-text" class="text-stone-400 font-mono">0 / 100</span>
+          </div>
+          <div class="w-full h-2.5 bg-[#12100e] rounded-full overflow-hidden border border-stone-800 p-[1px]">
+            <div id="hud-xp-bar" class="h-full bg-gradient-to-r from-amber-700 to-[#d4af37] rounded-full transition-all duration-300" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ================= SCROLLABLE MAIN CONTENT AREA ================= -->
+    <main id="main-viewport" class="flex-1 overflow-y-auto overflow-x-hidden custom-scroll p-3.5 space-y-3.5 relative">
+
+      <!-- ==================== TAB 1: ГОРОД (ХАБ & ТАВЕРНА) ==================== -->
+      <section id="tab-town" class="space-y-3.5">
+        <!-- City Banner -->
+        <div class="medieval-card-parchment rounded-xl p-3.5 relative overflow-hidden">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <span class="text-[10px] uppercase tracking-widest text-[#d4af37] font-semibold">Вольный бастион</span>
+              <h2 class="font-medieval text-lg font-bold text-stone-100 mt-0.5">Вороний Брод</h2>
+              <p class="text-xs text-stone-400 mt-1 leading-relaxed">
+                Туман стелется по брусчатке. В таверне «Ржавый Якорь» потрескивает очаг, наёмники делят добычу, а староста ищет смельчаков.
+              </p>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-[#12100e]/80 border border-[#d4af37]/40 flex items-center justify-center shrink-0">
+              <i class="fa-solid fa-chess-rook text-2xl text-[#d4af37] ember-glow"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tavern Hearth: Rest & Heal -->
+        <div class="medieval-card rounded-xl p-3.5">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-lg bg-orange-950/60 border border-orange-700/50 flex items-center justify-center">
+                <i class="fa-solid fa-fire-flame-curved text-orange-400 text-base ember-glow"></i>
+              </div>
+              <div>
+                <h3 class="font-medieval text-sm font-bold text-stone-100">Отдых у камина</h3>
+                <p class="text-[11px] text-stone-400">Горячая похлёбка, перевязка ран и ночлег</p>
+              </div>
+            </div>
+            <span id="rest-cost-badge" class="text-xs font-medieval font-bold text-[#d4af37] bg-[#12100e] px-2.5 py-1 rounded border border-stone-800">
+              15 <i class="fa-solid fa-coins text-[10px]"></i>
+            </span>
+          </div>
+          <div class="flex gap-2 mt-2.5">
+            <button onclick="app.restAtTavern()" class="medieval-btn flex-1 bg-gradient-to-r from-amber-900/80 to-stone-800 hover:from-amber-800 border border-[#d4af37]/50 text-stone-100 font-medieval text-xs font-bold py-2.5 px-3 rounded-lg flex items-center justify-center gap-2">
+              <i class="fa-solid fa-bed text-[#d4af37]"></i> Отдохнуть (Полное HP)
+            </button>
+          </div>
+        </div>
+
+        <!-- Dice Minigame: 2d6 with the Innkeeper -->
+        <div class="medieval-card rounded-xl p-3.5">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-lg bg-amber-950/50 border border-[#d4af37]/40 flex items-center justify-center">
+                <i class="fa-solid fa-dice text-[#d4af37] text-base"></i>
+              </div>
+              <div>
+                <h3 class="font-medieval text-sm font-bold text-stone-100">Кости с трактирщиком (2d6)</h3>
+                <p class="text-[11px] text-stone-400">Брось больше старого Одноглазого Брана — удвоишь ставку</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bet Selector -->
+          <div class="grid grid-cols-4 gap-1.5 my-2.5">
+            <button onclick="app.setDiceBet(10)" id="bet-btn-10" class="medieval-btn py-1.5 rounded text-xs font-bold border border-[#d4af37] bg-[#292524] text-[#d4af37]">10 з.</button>
+            <button onclick="app.setDiceBet(25)" id="bet-btn-25" class="medieval-btn py-1.5 rounded text-xs font-bold border border-stone-700 bg-[#12100e] text-stone-400">25 з.</button>
+            <button onclick="app.setDiceBet(50)" id="bet-btn-50" class="medieval-btn py-1.5 rounded text-xs font-bold border border-stone-700 bg-[#12100e] text-stone-400">50 з.</button>
+            <button onclick="app.setDiceBet(100)" id="bet-btn-100" class="medieval-btn py-1.5 rounded text-xs font-bold border border-stone-700 bg-[#12100e] text-stone-400">100 з.</button>
+          </div>
+
+          <!-- Dice Table Display -->
+          <div class="bg-[#12100e] border border-stone-800 rounded-lg p-3 my-2 flex items-center justify-around text-center">
+            <div>
+              <p class="text-[10px] uppercase text-stone-400 mb-1">Твой бросок</p>
+              <div id="player-dice-box" class="flex items-center justify-center gap-2 text-2xl text-[#d4af37]">
+                <i class="fa-solid fa-dice-four"></i>
+                <i class="fa-solid fa-dice-three"></i>
+              </div>
+              <p id="player-dice-sum" class="font-medieval text-xs font-bold text-stone-200 mt-1">Сумма: —</p>
+            </div>
+
+            <div class="text-stone-600 font-medieval text-xs font-bold">VS</div>
+
+            <div>
+              <p class="text-[10px] uppercase text-stone-400 mb-1">Трактирщик</p>
+              <div id="keeper-dice-box" class="flex items-center justify-center gap-2 text-2xl text-stone-400">
+                <i class="fa-solid fa-dice-three"></i>
+                <i class="fa-solid fa-dice-three"></i>
+              </div>
+              <p id="keeper-dice-sum" class="font-medieval text-xs font-bold text-stone-400 mt-1">Сумма: —</p>
+            </div>
+          </div>
+
+          <p id="dice-result-msg" class="text-center text-xs text-stone-400 mb-2.5 min-h-[18px]">
+            «Ставь монету на бочку, путник, коли не боишься!»
+          </p>
+
+          <button onclick="app.playDice()" class="medieval-btn w-full bg-[#292524] hover:bg-stone-700 border border-[#d4af37]/60 text-[#d4af37] font-medieval text-xs font-bold py-2.5 rounded-lg flex items-center justify-center gap-2">
+            <i class="fa-solid fa-dice-d6"></i> Бросить кости (Ставка: <span id="current-bet-label">10</span> з.)
+          </button>
+        </div>
+
+        <!-- Notice Board: Mini-Quests & Rumors with Stat Checks -->
+        <div class="medieval-card rounded-xl p-3.5">
+          <div class="flex items-center justify-between mb-2.5">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-scroll text-[#d4af37]"></i>
+              <h3 class="font-medieval text-sm font-bold text-stone-100">Доска объявлений</h3>
+            </div>
+            <button onclick="app.refreshQuests()" class="text-[11px] text-[#d4af37] hover:underline flex items-center gap-1">
+              <i class="fa-solid fa-rotate text-[10px]"></i> Новые слухи
+            </button>
+          </div>
+          <div id="quest-board-list" class="space-y-2.5">
+            <!-- Dynamically populated mini-quests -->
+          </div>
+        </div>
+
+        <!-- Sync with Telegram Bot & Save Utilities -->
+        <div class="medieval-card rounded-xl p-3.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <div>
+              <h4 class="font-medieval text-xs font-bold text-stone-200">Воронья почта (Telegram Бот)</h4>
+              <p class="text-[11px] text-stone-400">Отправить летопись подвигов обратно в чат бота</p>
+            </div>
+            <button onclick="app.sendDataToBot()" class="medieval-btn bg-[#292524] border border-[#d4af37]/50 text-[#d4af37] text-xs font-medieval font-bold px-3 py-2 rounded-lg flex items-center gap-1.5">
+              <i class="fa-solid fa-paper-plane"></i> В бот
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 2: ВЫЛАЗКА (БОИ & ДАНЖИ) ==================== -->
+      <section id="tab-combat" class="hidden space-y-3.5">
+
+        <!-- Location Selector View (Shown when not in active combat) -->
+        <div id="dungeon-select-view" class="space-y-3">
+          <div class="medieval-card-parchment rounded-xl p-3.5">
+            <h2 class="font-medieval text-base font-bold text-stone-100 flex items-center gap-2">
+              <i class="fa-solid fa-map-location-dot text-[#d4af37]"></i> Выбор похода за стены
+            </h2>
+            <p class="text-xs text-stone-400 mt-1">
+              Чем глубже во тьму ты уходишь, тем свирепее твари и богаче трофеи.
+            </p>
+          </div>
+
+          <div id="locations-list" class="space-y-2.5">
+            <!-- Populated by JS: Тракт разбойников, Проклятый чащобник, Склеп Древних -->
+          </div>
+        </div>
+
+        <!-- Active Turn-Based Combat View -->
+        <div id="active-combat-view" class="hidden space-y-3">
+          <!-- Dungeon Header + Retreat -->
+          <div class="flex items-center justify-between bg-[#1c1917] border border-stone-800 rounded-lg px-3 py-2">
+            <div>
+              <span id="combat-location-name" class="text-[10px] uppercase tracking-wider text-[#d4af37] font-semibold">Тракт разбойников</span>
+              <p id="combat-round-indicator" class="text-xs text-stone-400">Раунд 1 • Твой ход</p>
+            </div>
+            <button onclick="app.retreatCombat()" class="medieval-btn text-xs text-stone-400 hover:text-red-400 border border-stone-700 px-2.5 py-1 rounded flex items-center gap-1">
+              <i class="fa-solid fa-person-running"></i> Отступить
+            </button>
+          </div>
+
+          <!-- Visual Enemy Card (with Floating Damage container) -->
+          <div id="enemy-card-container" class="medieval-card-parchment rounded-xl p-4 relative overflow-hidden text-center">
+            <!-- Floating Damage Anchor -->
+            <div id="floating-dmg-layer" class="inset-0 pointer-events-none"></div>
+
+            <div class="flex items-center justify-between text-xs text-stone-400 mb-2">
+              <span id="enemy-tier-badge" class="bg-[#12100e] border border-stone-700 px-2 py-0.5 rounded font-medieval text-[#d4af37]">Ур. 1</span>
+              <span id="enemy-intent-badge" class="bg-red-950/70 border border-red-800/60 text-red-300 px-2 py-0.5 rounded text-[11px]">
+                <i class="fa-solid fa-skull"></i> Урон: 8–12
+              </span>
+            </div>
+
+            <!-- Enemy Portrait / SVG Icon Art -->
+            <div id="enemy-avatar-box" class="w-20 h-20 mx-auto my-2 rounded-2xl bg-[#12100e] border-2 border-[#991b1b]/80 flex items-center justify-center shadow-xl relative">
+              <i id="enemy-icon" class="fa-solid fa-user-ninja text-4xl text-red-500"></i>
+            </div>
+
+            <h3 id="enemy-name" class="font-medieval text-lg font-extrabold text-stone-100 mt-1">Мародёр с кистенём</h3>
+            <p id="enemy-lore" class="text-[11px] text-stone-400 italic mb-3">Одичавший дезертир, поджидающий обозы у старого моста</p>
+
+            <!-- Enemy HP Bar -->
+            <div class="max-w-xs mx-auto">
+              <div class="flex justify-between text-xs font-bold mb-1">
+                <span class="text-red-400">Кровь врага</span>
+                <span id="enemy-hp-text" class="font-mono text-stone-200">65 / 65</span>
+              </div>
+              <div class="w-full h-3.5 bg-[#12100e] rounded-full overflow-hidden border border-red-950 p-0.5">
+                <div id="enemy-hp-bar" class="h-full bg-gradient-to-r from-[#7f1d1d] via-[#991b1b] to-[#dc2626] rounded-full transition-all duration-300" style="width: 100%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Player Combat Action Panel (4 Tactical Buttons) -->
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btn-act-quick" onclick="app.combatAction('quick')" class="medieval-btn medieval-card hover:border-[#d4af37] p-2.5 rounded-xl text-left flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-lg bg-amber-950/60 border border-[#d4af37]/50 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-bolt text-[#d4af37]"></i>
+              </div>
+              <div>
+                <div class="font-medieval text-xs font-bold text-stone-100">Быстрый выпад</div>
+                <div class="text-[10px] text-stone-400">95% точность • +Крит</div>
+              </div>
+            </button>
+
+            <button id="btn-act-heavy" onclick="app.combatAction('heavy')" class="medieval-btn medieval-card hover:border-red-500 p-2.5 rounded-xl text-left flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-lg bg-red-950/60 border border-red-700/50 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-gavel text-red-400"></i>
+              </div>
+              <div>
+                <div class="font-medieval text-xs font-bold text-stone-100">Тяжёлый удар</div>
+                <div class="text-[10px] text-stone-400">165% урона • 72% шанс</div>
+              </div>
+            </button>
+
+            <button id="btn-act-defend" onclick="app.combatAction('defend')" class="medieval-btn medieval-card hover:border-sky-500 p-2.5 rounded-xl text-left flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-lg bg-sky-950/60 border border-sky-700/50 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-shield-halved text-sky-400"></i>
+              </div>
+              <div>
+                <div class="font-medieval text-xs font-bold text-stone-100">Глухая оборона</div>
+                <div class="text-[10px] text-stone-400">-60% урона • +15% HP</div>
+              </div>
+            </button>
+
+            <button id="btn-act-potion" onclick="app.combatAction('potion')" class="medieval-btn medieval-card hover:border-emerald-500 p-2.5 rounded-xl text-left flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-lg bg-emerald-950/60 border border-emerald-700/50 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-flask-vial text-emerald-400"></i>
+              </div>
+              <div>
+                <div class="font-medieval text-xs font-bold text-stone-100">Выпить эликсир</div>
+                <div id="combat-potion-sub" class="text-[10px] text-emerald-400">+45 HP (Осталось: 2)</div>
+              </div>
+            </button>
+          </div>
+
+          <!-- Combat Log -->
+          <div class="medieval-card rounded-xl p-3">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">Хроника схватки</span>
+              <i class="fa-solid fa-feather-pointed text-xs text-stone-500"></i>
+            </div>
+            <div id="combat-log-box" class="h-28 overflow-y-auto custom-scroll space-y-1 text-xs font-sans pr-1">
+              <!-- Combat log lines -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 3: ГЕРОЙ (ИНВЕНТАРЬ & ХАРАКТЕРИСТИКИ) ==================== -->
+      <section id="tab-hero" class="hidden space-y-3.5">
+
+        <!-- Character Paper Doll & Combat Summary -->
+        <div class="medieval-card-parchment rounded-xl p-3.5">
+          <div class="flex items-center justify-between mb-2.5">
+            <h2 class="font-medieval text-sm font-bold text-[#d4af37] flex items-center gap-2">
+              <i class="fa-solid fa-shield-heart"></i> Снаряжение Героя
+            </h2>
+            <span id="hero-power-rating" class="text-[11px] bg-[#12100e] border border-stone-700 px-2 py-0.5 rounded text-stone-300 font-mono">
+              Боевая мощь: 34
+            </span>
+          </div>
+
+          <!-- 3 Equipment Slots: Weapon, Armor, Amulet -->
+          <div class="grid grid-cols-3 gap-2.5 mb-3">
+            <!-- Weapon Slot -->
+            <div onclick="app.unequipSlot('weapon')" class="bg-[#12100e] border border-stone-700 hover:border-[#d4af37] rounded-xl p-2.5 text-center cursor-pointer transition">
+              <div class="text-[10px] uppercase text-stone-500 mb-1">Оружие</div>
+              <div class="w-10 h-10 mx-auto rounded-lg bg-[#1c1917] border border-stone-800 flex items-center justify-center text-[#d4af37] text-lg mb-1">
+                <i id="slot-weapon-icon" class="fa-solid fa-khanda"></i>
+              </div>
+              <div id="slot-weapon-name" class="text-[11px] font-semibold text-stone-200 truncate">Ржавый клинок</div>
+              <div id="slot-weapon-stat" class="text-[10px] text-[#d4af37]">+4 Урон</div>
+            </div>
+
+            <!-- Armor Slot -->
+            <div onclick="app.unequipSlot('armor')" class="bg-[#12100e] border border-stone-700 hover:border-[#d4af37] rounded-xl p-2.5 text-center cursor-pointer transition">
+              <div class="text-[10px] uppercase text-stone-500 mb-1">Броня</div>
+              <div class="w-10 h-10 mx-auto rounded-lg bg-[#1c1917] border border-stone-800 flex items-center justify-center text-sky-400 text-lg mb-1">
+                <i id="slot-armor-icon" class="fa-solid fa-shirt"></i>
+              </div>
+              <div id="slot-armor-name" class="text-[11px] font-semibold text-stone-200 truncate">Стёганка</div>
+              <div id="slot-armor-stat" class="text-[10px] text-sky-400">+15 HP • +2 Защ</div>
+            </div>
+
+            <!-- Amulet Slot -->
+            <div onclick="app.unequipSlot('amulet')" class="bg-[#12100e] border border-stone-700 hover:border-[#d4af37] rounded-xl p-2.5 text-center cursor-pointer transition">
+              <div class="text-[10px] uppercase text-stone-500 mb-1">Амулет</div>
+              <div class="w-10 h-10 mx-auto rounded-lg bg-[#1c1917] border border-stone-800 flex items-center justify-center text-emerald-400 text-lg mb-1">
+                <i id="slot-amulet-icon" class="fa-solid fa-ring"></i>
+              </div>
+              <div id="slot-amulet-name" class="text-[11px] font-semibold text-stone-400 truncate">Пусто</div>
+              <div id="slot-amulet-stat" class="text-[10px] text-stone-500">Нажми в сумке</div>
+            </div>
+          </div>
+
+          <!-- Computed Secondary Stats -->
+          <div class="grid grid-cols-4 gap-1.5 bg-[#12100e] border border-stone-800 rounded-lg p-2 text-center">
+            <div>
+              <div class="text-[10px] text-stone-400">Атака</div>
+              <div id="stat-calc-atk" class="font-medieval text-xs font-bold text-stone-100">12–16</div>
+            </div>
+            <div>
+              <div class="text-[10px] text-stone-400">Защита</div>
+              <div id="stat-calc-def" class="font-medieval text-xs font-bold text-sky-400">4</div>
+            </div>
+            <div>
+              <div class="text-[10px] text-stone-400">Шанс крита</div>
+              <div id="stat-calc-crit" class="font-medieval text-xs font-bold text-amber-400">12%</div>
+            </div>
+            <div>
+              <div class="text-[10px] text-stone-400">Уклонение</div>
+              <div id="stat-calc-dodge" class="font-medieval text-xs font-bold text-emerald-400">8%</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Attributes & Level Up Points -->
+        <div class="medieval-card rounded-xl p-3.5">
+          <div class="flex items-center justify-between mb-2.5">
+            <h3 class="font-medieval text-sm font-bold text-stone-100">Характеристики</h3>
+            <span id="stat-points-badge" class="text-xs font-bold px-2 py-0.5 rounded bg-[#292524] text-[#d4af37] border border-[#d4af37]/40">
+              Очки: 0
+            </span>
+          </div>
+
+          <div class="space-y-2">
+            <!-- Strength -->
+            <div class="flex items-center justify-between bg-[#12100e] border border-stone-800 rounded-lg p-2.5">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded bg-red-950/60 border border-red-800/50 flex items-center justify-center text-red-400">
+                  <i class="fa-solid fa-hand-fist"></i>
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-stone-100">Сила: <span id="attr-str-val" class="text-[#d4af37]">5</span></div>
+                  <div class="text-[10px] text-stone-400">+3 к урону за ур. и силовые проверки</div>
+                </div>
+              </div>
+              <button onclick="app.upgradeStat('str')" id="btn-up-str" class="medieval-btn bg-[#292524] border border-[#d4af37] text-[#d4af37] text-xs font-bold px-2.5 py-1.5 rounded-lg">
+                +1
+              </button>
+            </div>
+
+            <!-- Vitality -->
+            <div class="flex items-center justify-between bg-[#12100e] border border-stone-800 rounded-lg p-2.5">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded bg-amber-950/60 border border-amber-800/50 flex items-center justify-center text-amber-400">
+                  <i class="fa-solid fa-heart-pulse"></i>
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-stone-100">Живучесть: <span id="attr-vit-val" class="text-[#d4af37]">5</span></div>
+                  <div class="text-[10px] text-stone-400">+18 макс. HP и +1 к броне за ур.</div>
+                </div>
+              </div>
+              <button onclick="app.upgradeStat('vit')" id="btn-up-vit" class="medieval-btn bg-[#292524] border border-[#d4af37] text-[#d4af37] text-xs font-bold px-2.5 py-1.5 rounded-lg">
+                +1
+              </button>
+            </div>
+
+            <!-- Agility -->
+            <div class="flex items-center justify-between bg-[#12100e] border border-stone-800 rounded-lg p-2.5">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded bg-emerald-950/60 border border-emerald-800/50 flex items-center justify-center text-emerald-400">
+                  <i class="fa-solid fa-feather"></i>
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-stone-100">Ловкость: <span id="attr-agi-val" class="text-[#d4af37]">5</span></div>
+                  <div class="text-[10px] text-stone-400">+2.5% крит и +2% уклонение за ур.</div>
+                </div>
+              </div>
+              <button onclick="app.upgradeStat('agi')" id="btn-up-agi" class="medieval-btn bg-[#292524] border border-[#d4af37] text-[#d4af37] text-xs font-bold px-2.5 py-1.5 rounded-lg">
+                +1
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inventory Grid -->
+        <div class="medieval-card rounded-xl p-3.5">
+          <div class="flex items-center justify-between mb-2.5">
+            <h3 class="font-medieval text-sm font-bold text-stone-100 flex items-center gap-2">
+              <i class="fa-solid fa-sack-xmark text-[#d4af37]"></i> Походная сумка
+            </h3>
+            <span id="inventory-count-label" class="text-[11px] text-stone-400">Предметов: 0</span>
+          </div>
+          <div id="inventory-grid" class="grid grid-cols-1 gap-2">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Reset Save Option -->
+        <div class="text-center pt-1 pb-2">
+          <button onclick="app.resetProgress()" class="text-[11px] text-stone-500 hover:text-red-400 underline">
+            Сбросить прогресс и начать новую хронику
+          </button>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 4: КУЗНИЦА (МАГАЗИН) ==================== -->
+      <section id="tab-forge" class="hidden space-y-3.5">
+
+        <!-- Blacksmith Banner -->
+        <div class="medieval-card-parchment rounded-xl p-3.5 flex items-center justify-between gap-3">
+          <div>
+            <span class="text-[10px] uppercase tracking-widest text-[#d4af37] font-semibold">Мастерская Гримбальда</span>
+            <h2 class="font-medieval text-base font-bold text-stone-100 mt-0.5">Кузница и Алхимия</h2>
+            <p class="text-xs text-stone-400 mt-1">
+              «Воронья сталь не подведёт в склепе, если у тебя звонкая монета».
+            </p>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-[#12100e] border border-[#d4af37]/40 flex items-center justify-center shrink-0">
+            <i class="fa-solid fa-hammer text-2xl text-[#d4af37]"></i>
+          </div>
+        </div>
+
+        <!-- Quick Sell All Monster Trophies -->
+        <div class="medieval-card rounded-xl p-3.5 flex items-center justify-between gap-2">
+          <div>
+            <h3 class="font-medieval text-xs font-bold text-stone-100">Скупка охотничьих трофеев</h3>
+            <p id="trophies-summary-text" class="text-[11px] text-stone-400">Трофеев в сумке нет</p>
+          </div>
+          <button id="btn-sell-trophies" onclick="app.sellAllTrophies()" class="medieval-btn bg-gradient-to-r from-amber-800 to-amber-700 border border-[#d4af37] text-stone-100 font-medieval text-xs font-bold px-3 py-2 rounded-lg shrink-0">
+            Продать трофеи
+          </button>
+        </div>
+
+        <!-- Shop Category Filter -->
+        <div class="grid grid-cols-4 gap-1.5">
+          <button onclick="app.setShopFilter('all')" id="shop-tab-all" class="medieval-btn py-1.5 rounded-lg text-xs font-medieval font-bold border border-[#d4af37] bg-[#292524] text-[#d4af37]">Все</button>
+          <button onclick="app.setShopFilter('weapon')" id="shop-tab-weapon" class="medieval-btn py-1.5 rounded-lg text-xs font-medieval font-bold border border-stone-800 bg-[#1c1917] text-stone-400">Оружие</button>
+          <button onclick="app.setShopFilter('armor')" id="shop-tab-armor" class="medieval-btn py-1.5 rounded-lg text-xs font-medieval font-bold border border-stone-800 bg-[#1c1917] text-stone-400">Доспехи</button>
+          <button onclick="app.setShopFilter('alchemy')" id="shop-tab-alchemy" class="medieval-btn py-1.5 rounded-lg text-xs font-medieval font-bold border border-stone-800 bg-[#1c1917] text-stone-400">Алхимия</button>
+        </div>
+
+        <!-- Shop Items List -->
+        <div id="forge-shop-list" class="space-y-2.5">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ================= TOAST NOTIFICATION BANNER ================= -->
+    <div id="toast-container" class="pointer-events-none fixed top-16 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-sm space-y-1.5"></div>
+
+    <!-- ================= MODAL FOR QUESTS / COMBAT OUTCOME ================= -->
+    <div id="modal-overlay" class="hidden fixed inset-0 bg-black/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+      <div class="medieval-card-parchment medieval-gold-border rounded-2xl max-w-sm w-full p-4 space-y-3 animate-fadeIn">
+        <div class="flex items-center justify-between border-b border-stone-700/80 pb-2">
+          <h3 id="modal-title" class="font-medieval text-base font-bold text-[#d4af37]">Событие</h3>
+          <button onclick="app.closeModal()" class="text-stone-400 hover:text-stone-200">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div id="modal-body" class="text-xs text-stone-300 leading-relaxed space-y-2"></div>
+        <div id="modal-actions" class="pt-2 flex flex-col gap-2"></div>
+      </div>
+    </div>
+
+    <!-- ================= BOTTOM PINNED NAVIGATION BAR (4 TABS) ================= -->
+    <nav class="shrink-0 bg-[#1c1917] border-t border-stone-800 px-2 py-1.5 z-30">
+      <div class="grid grid-cols-4 gap-1">
+        <button onclick="app.switchTab('town')" id="nav-btn-town" class="medieval-btn flex flex-col items-center justify-center py-1.5 rounded-lg text-[#d4af37] bg-[#292524]/80 border border-[#d4af37]/40">
+          <i class="fa-solid fa-chess-rook text-base mb-0.5"></i>
+          <span class="font-medieval text-[10px] font-bold">🏰 Город</span>
+        </button>
+
+        <button onclick="app.switchTab('combat')" id="nav-btn-combat" class="medieval-btn flex flex-col items-center justify-center py-1.5 rounded-lg text-stone-400 border border-transparent">
+          <i class="fa-solid fa-khanda text-base mb-0.5"></i>
+          <span class="font-medieval text-[10px] font-bold">⚔️ Вылазка</span>
+        </button>
+
+        <button onclick="app.switchTab('hero')" id="nav-btn-hero" class="medieval-btn relative flex flex-col items-center justify-center py-1.5 rounded-lg text-stone-400 border border-transparent">
+          <i class="fa-solid fa-user-shield text-base mb-0.5"></i>
+          <span class="font-medieval text-[10px] font-bold">🎒 Герой</span>
+          <span id="nav-hero-dot" class="hidden absolute top-1 right-5 w-2 h-2 rounded-full bg-[#d4af37]"></span>
+        </button>
+
+        <button onclick="app.switchTab('forge')" id="nav-btn-forge" class="medieval-btn flex flex-col items-center justify-center py-1.5 rounded-lg text-stone-400 border border-transparent">
+          <i class="fa-solid fa-hammer text-base mb-0.5"></i>
+          <span class="font-medieval text-[10px] font-bold">⚒ Кузница</span>
+        </button>
+      </div>
+    </nav>
+
+  </div>
+
+  <!-- ================= APPLICATION LOGIC ================= -->
+  <script>
+    const STORAGE_KEY = 'dark_medieval_rpg_save_v1';
+
+    // Master Catalog of Items (Weapons, Armors, Amulets, Potions, Trophies)
+    const ITEM_CATALOG = {
+      // Weapons
+      rusty_sword: {
+        id: 'rusty_sword', name: 'Ржавый клинок', type: 'weapon', icon: 'fa-khanda',
+        atk: 4, crit: 0, price: 30, desc: 'Выщербленный меч ополченца, видавший лучшие дни.'
+      },
+      brigand_axe: {
+        id: 'brigand_axe', name: 'Топор раскольника', type: 'weapon', icon: 'fa-axe-battle',
+        atk: 9, crit: 3, price: 95, desc: 'Тяжёлый боевой топор, пробивающий кожаные доспехи.'
+      },
+      silver_bastard: {
+        id: 'silver_bastard', name: 'Серебряный бастард', type: 'weapon', icon: 'fa-sword',
+        atk: 16, crit: 6, price: 220, desc: 'Полуторный клинок с серебряной насечкой против нежити.'
+      },
+      executioner_greatsword: {
+        id: 'executioner_greatsword', name: 'Двуручник Палача', type: 'weapon', icon: 'fa-khanda',
+        atk: 26, crit: 10, price: 460, desc: 'Воронёная сталь Инквизиции. Оставляет страшные раны.'
+      },
+
+      // Armors
+      padded_gambeson: {
+        id: 'padded_gambeson', name: 'Стёганый гамбезон', type: 'armor', icon: 'fa-shirt',
+        hp: 15, def: 2, price: 35, desc: 'Плотная простёганная куртка из сукна и конского волоса.'
+      },
+      chainmail_hauberk: {
+        id: 'chainmail_hauberk', name: 'Клёпаная кольчуга', type: 'armor', icon: 'fa-vest',
+        hp: 40, def: 5, price: 120, desc: 'Надёжное плетение стальных колец кузнеца Гримбальда.'
+      },
+      inquisitor_cuirass: {
+        id: 'inquisitor_cuirass', name: 'КирасаДозора Теней', type: 'armor', icon: 'fa-shield-halved',
+        hp: 85, def: 9, price: 270, desc: 'Закалённый нагрудник с гербом павшего бастиона.'
+      },
+      dread_plate: {
+        id: 'dread_plate', name: 'Латы Пепельного Стража', type: 'armor', icon: 'fa-chess-knight',
+        hp: 150, def: 15, price: 540, desc: 'Полный готический доспех, выкованный в горнах Древних.'
+      },
+
+      // Amulets
+      wolf_fang_charm: {
+        id: 'wolf_fang_charm', name: 'Оберег Волчьего Клыка', type: 'amulet', icon: 'fa-tooth',
+        atk: 3, crit: 5, dodge: 3, price: 85, desc: 'Приносит хищную ярость и чуткость зверя.'
+      },
+      blood_ruby_ring: {
+        id: 'blood_ruby_ring', name: 'Перстень Кровавой Росы', type: 'amulet', icon: 'fa-ring',
+        atk: 6, hp: 35, crit: 6, dodge: 4, price: 210, desc: 'Тёмный рубин пульсирует в такт ударам сердца.'
+      },
+      ancient_reliquary: {
+        id: 'ancient_reliquary', name: 'Реликварий Святого Пепла', type: 'amulet', icon: 'fa-cross',
+        atk: 11, hp: 65, crit: 9, dodge: 7, price: 420, desc: 'Древняя реликвия, хранящая тепло негасимого пламени.'
+      },
+
+      // Consumables
+      healing_elixir: {
+        id: 'healing_elixir', name: 'Алый эликсир жизни', type: 'potion', icon: 'fa-flask',
+        heal: 55, price: 25, desc: 'Густой травяной отвар на зверобое и спирту. Восстанавливает 55 HP (+25% от макс. HP).'
+      },
+
+      // Monster Trophies (for selling in Forge)
+      trophy_ear: {
+        id: 'trophy_ear', name: 'Увольнительный жетон мародёра', type: 'trophy', icon: 'fa-medal',
+        price: 18, desc: 'Медный жетон шайки с Тракта. Староста платит за каждый.'
+      },
+      trophy_fang: {
+        id: 'trophy_fang', name: 'Шкура болотного волколака', type: 'trophy', icon: 'fa-paw',
+        price: 42, desc: 'Прочная бурая шкура из Проклятого чащобника.'
+      },
+      trophy_crown: {
+        id: 'trophy_crown', name: 'Печать Древнего Склепа', type: 'trophy', icon: 'fa-skull-crossbones',
+        price: 95, desc: 'Золочёная погребальная печать эпохи Первых Королей.'
+      }
+    };
+
+    // Dungeons & Enemies Catalog
+    const DUNGEONS = [
+      {
+        id: 'bandit_road',
+        name: 'Тракт разбойников',
+        difficulty: 'Легко',
+        diffColor: 'text-emerald-400 border-emerald-800/60 bg-emerald-950/40',
+        recLevel: 'Ур. 1–3',
+        icon: 'fa-road-spikes',
+        desc: 'Разбитый королевский тракт, где шайки дезертиров грабят купеческие обозы.',
+        enemies: [
+          {
+            name: 'Мародёр с кистенём', level: 1, hp: 58, minDmg: 7, maxDmg: 11,
+            xp: 35, gold: [16, 26], trophy: 'trophy_ear', icon: 'fa-user-ninja',
+            lore: 'Одичавший пехотинец, вооружённый шипастым железным шаром на цепи.'
+          },
+          {
+            name: 'Арбалетчик Чёрной Сотни', level: 2, hp: 72, minDmg: 9, maxDmg: 14,
+            xp: 45, gold: [22, 34], trophy: 'trophy_ear', icon: 'fa-bullseye',
+            lore: 'Беглый стрелок, целящийся в сочленения доспехов.'
+          },
+          {
+            name: 'Одноглазый Варг (Главарь)', level: 3, hp: 96, minDmg: 12, maxDmg: 17,
+            xp: 65, gold: [35, 50], trophy: 'trophy_ear', icon: 'fa-skull',
+            lore: 'Бывший десятник королевской стражи, подчинивший разбойников.'
+          }
+        ]
+      },
+      {
+        id: 'cursed_thicket',
+        name: 'Проклятый чащобник',
+        difficulty: 'Средне',
+        diffColor: 'text-amber-400 border-amber-800/60 bg-amber-950/40',
+        recLevel: 'Ур. 3–6',
+        icon: 'fa-tree',
+        desc: 'Чёрный лес у трясины, где корни сочатся болотной гнилью и рыщут оборотни.',
+        enemies: [
+          {
+            name: 'Болотный вурдалак', level: 4, hp: 125, minDmg: 15, maxDmg: 22,
+            xp: 85, gold: [42, 62], trophy: 'trophy_fang', icon: 'fa-ghost',
+            lore: 'Трупно-бледная тварь с когтями, пропитанными трупным ядом.'
+          },
+          {
+            name: 'Матёрый волколак', level: 5, hp: 155, minDmg: 18, maxDmg: 27,
+            xp: 110, gold: [55, 80], trophy: 'trophy_fang', icon: 'fa-dog',
+            lore: 'Огромный зверь в обрывках охотничьего плаща.'
+          },
+          {
+            name: 'Хозяин Чащобы (Леший)', level: 6, hp: 195, minDmg: 22, maxDmg: 32,
+            xp: 145, gold: [75, 105], trophy: 'trophy_fang', icon: 'fa-dragon',
+            lore: 'Древний дух гниющего леса в короне из оленьих рогов.'
+          }
+        ]
+      },
+      {
+        id: 'ancient_crypt',
+        name: 'Склеп Древних',
+        difficulty: 'Сложно',
+        diffColor: 'text-red-400 border-red-800/60 bg-red-950/40',
+        recLevel: 'Ур. 6+',
+        icon: 'fa-dungeon',
+        desc: 'Подземная усыпальница Первых Королей, полная неупокоенных рыцарей и тёмного колдовства.',
+        enemies: [
+          {
+            name: 'Костяной страж со щитом', level: 7, hp: 230, minDmg: 25, maxDmg: 36,
+            xp: 180, gold: [95, 130], trophy: 'trophy_crown', icon: 'fa-bone',
+            lore: 'Скелет в изъеденных ржавчиной латах, не знающий усталости.'
+          },
+          {
+            name: 'Рыцарь Кровавого Ордена', level: 8, hp: 285, minDmg: 30, maxDmg: 44,
+            xp: 230, gold: [125, 165], trophy: 'trophy_crown', icon: 'fa-chess-king',
+            lore: 'Падший паладин, чья клятва обратилась вечным проклятием.'
+          },
+          {
+            name: 'Архилич Моргарат', level: 10, hp: 360, minDmg: 36, maxDmg: 52,
+            xp: 320, gold: [180, 250], trophy: 'trophy_crown', icon: 'fa-hat-wizard',
+            lore: 'Владыка склепа, повелевающий пеплом и мёртвыми легионами.'
+          }
+        ]
+      }
+    ];
+
+    // Tavern Notice Board Quests Pool
+    const QUEST_POOL = [
+      {
+        id: 'q_wagon',
+        title: 'Сломанная ось обоза',
+        desc: 'Купеческая телега с железной рудой застряла во рву у городских ворот. Купец сулит звонкую монету тому, кто вытащит воз или разгрузит ящики.',
+        stat: 'str',
+        statName: 'Сила',
+        difficulty: 6,
+        rewardGold: 40,
+        rewardXp: 45,
+        failDmg: 14,
+        successText: 'Напрягая жилы, ты приподнял ось телеги, пока подмастерья меняли колесо. Купец с поклоном отсыпал золотых!',
+        failText: 'Гнилая балка треснула и больно ударила тебя по плечу (-14 HP), но пару медяков за старание всё же дали.'
+      },
+      {
+        id: 'q_cutpurse',
+        title: 'Тень в переулке',
+        desc: 'У лавки ростовщика заметили ловкого карманника из гильдии «Ночных Крыс». Перехватить его до того, как он скроется в стоках — дело быстрых ног.',
+        stat: 'agi',
+        statName: 'Ловкость',
+        difficulty: 6,
+        rewardGold: 48,
+        rewardXp: 50,
+        failDmg: 16,
+        successText: 'Ты перемахнул через бочки и перехватил вора за шиворот! Ростовщик щедро заплатил за возвращённый кошель.',
+        failText: 'Вор полоснул стилетом в темноте (-16 HP) и нырнул в решётку стока.'
+      },
+      {
+        id: 'q_plague_cellar',
+        title: 'Чумной погреб аптекаря',
+        desc: 'Старый алхимик просит достать сундук с редкими реагентами из затопленного подвала, полного ядовитых испарений.',
+        stat: 'vit',
+        statName: 'Живучесть',
+        difficulty: 6,
+        rewardGold: 35,
+        rewardXp: 55,
+        rewardItem: 'healing_elixir',
+        failDmg: 18,
+        successText: 'Задержав дыхание, ты вынес кованый ларец из едкого тумана. Аптекарь вручил тебе золото и Алый эликсир!',
+        failText: 'Болотные миазмы обожгли лёгкие (-18 HP), пришлось отступить к лестнице.'
+      },
+      {
+        id: 'q_brawl',
+        title: 'Кулачный спор у кузницы',
+        desc: 'Пьяный десятник наёмников вызывает любого смельчака продержаться против него три схватки на кулаках.',
+        stat: 'str',
+        statName: 'Сила',
+        difficulty: 8,
+        rewardGold: 65,
+        rewardXp: 70,
+        failDmg: 22,
+        successText: 'Твой сокрушительный удар отправил десятника в бочку с дождевой водой! Толпа ревёт от восторга.',
+        failText: 'Тяжёлый кулак ветерана рассекает тебе бровь (-22 HP), но он уважительно хлопает тебя по плечу.'
+      },
+      {
+        id: 'q_crypt_rune',
+        title: 'Расшифровка казематной печати',
+        desc: 'Монах ордена просит аккуратно снять восковой слепок с ловушки на древнем саркофаге у часовни.',
+        stat: 'agi',
+        statName: 'Ловкость',
+        difficulty: 8,
+        rewardGold: 70,
+        rewardXp: 75,
+        failDmg: 20,
+        successText: 'Твои пальцы не дрогнули — игла ловушки осталась на взводе, а слепок достался ордену!',
+        failText: 'Скрытая пружина щёлкнула, выпустив отравленный шип (-20 HP).'
+      }
+    ];
+
+    class MedievalRPG {
+      constructor() {
+        this.tg = window.Telegram?.WebApp || null;
+        this.activeTab = 'town';
+        this.shopFilter = 'all';
+        this.diceBet = 10;
+        this.combat = null; // Active combat state
+        this.state = this.loadState();
+        this.initTelegram();
+        this.renderAll();
+      }
+
+      // Initialize Telegram Mini App SDK
+      initTelegram() {
+        if (!this.tg) return;
+        try {
+          this.tg.ready();
+          this.tg.expand();
+          if (typeof this.tg.setHeaderColor === 'function') {
+            this.tg.setHeaderColor('#12100e');
+          }
+          if (typeof this.tg.setBackgroundColor === 'function') {
+            this.tg.setBackgroundColor('#12100e');
+          }
+          const tgFirstName = this.tg.initDataUnsafe?.user?.first_name;
+          if (tgFirstName && tgFirstName.trim().length > 0) {
+            this.state.name = tgFirstName.trim();
+            this.saveState();
+          }
+        } catch (err) {
+          console.warn('Telegram WebApp init fallback:', err);
+        }
+      }
+
+      // Haptic Feedback Helper
+      haptic(type = 'light') {
+        try {
+          if (!this.tg || !this.tg.HapticFeedback) return;
+          if (['light', 'medium', 'heavy', 'rigid', 'soft'].includes(type)) {
+            this.tg.HapticFeedback.impactOccurred(type);
+          } else if (['success', 'warning', 'error'].includes(type)) {
+            this.tg.HapticFeedback.notificationOccurred(type);
+          }
+        } catch (_) {}
+      }
+
+      getDefaultState() {
+        const tgName = window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name || 'Странник';
+        return {
+          name: tgName,
+          level: 1,
+          xp: 0,
+          nextXp: 100,
+          gold: 120,
+          hp: 105,
+          statPoints: 1,
+          stats: {
+            str: 5,
+            vit: 5,
+            agi: 5
+          },
+          equipped: {
+            weapon: 'rusty_sword',
+            armor: 'padded_gambeson',
+            amulet: null
+          },
+          inventory: [
+            { id: 'healing_elixir', qty: 2 },
+            { id: 'trophy_ear', qty: 1 }
+          ],
+          completedQuests: [],
+          activeQuests: ['q_wagon', 'q_cutpurse', 'q_plague_cellar'],
+          monstersSlain: 0
+        };
+      }
+
+      loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return this.getDefaultState();
+          const parsed = JSON.parse(raw);
+          return { ...this.getDefaultState(), ...parsed };
+        } catch (_) {
+          return this.getDefaultState();
+        }
+      }
+
+      saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+        } catch (_) {}
+      }
+
+      // Derived Combat Metrics
+      getComputedStats() {
+        const weapon = this.state.equipped.weapon ? ITEM_CATALOG[this.state.equipped.weapon] : null;
+        const armor = this.state.equipped.armor ? ITEM_CATALOG[this.state.equipped.armor] : null;
+        const amulet = this.state.equipped.amulet ? ITEM_CATALOG[this.state.equipped.amulet] : null;
+
+        const baseAtk = 4 + (this.state.stats.str * 3) + (weapon?.atk || 0) + (amulet?.atk || 0);
+        const minAtk = Math.max(1, Math.floor(baseAtk * 0.85));
+        const maxAtk = Math.ceil(baseAtk * 1.18);
+
+        const maxHp = 10 + (this.state.stats.vit * 18) + (armor?.hp || 0) + (amulet?.hp || 0);
+        const defense = Math.floor(this.state.stats.vit * 0.8) + (armor?.def || 0);
+        const critChance = Math.min(65, Math.round(5 + (this.state.stats.agi * 2.5) + (weapon?.crit || 0) + (amulet?.crit || 0)));
+        const dodgeChance = Math.min(45, Math.round(3 + (this.state.stats.agi * 2.0) + (amulet?.dodge || 0)));
+        const powerRating = Math.round(baseAtk * 1.6 + maxHp * 0.25 + defense * 2.5 + critChance);
+
+        return { minAtk, maxAtk, maxHp, defense, critChance, dodgeChance, powerRating };
+      }
+
+      getItemQty(itemId) {
+        const entry = this.state.inventory.find(i => i.id === itemId);
+        return entry ? entry.qty : 0;
+      }
+
+      addItem(itemId, count = 1) {
+        const existing = this.state.inventory.find(i => i.id === itemId);
+        if (existing) {
+          existing.qty += count;
+        } else {
+          this.state.inventory.push({ id: itemId, qty: count });
+        }
+        this.saveState();
+      }
+
+      removeItem(itemId, count = 1) {
+        const idx = this.state.inventory.findIndex(i => i.id === itemId);
+        if (idx === -1) return false;
+        if (this.state.inventory[idx].qty < count) return false;
+        this.state.inventory[idx].qty -= count;
+        if (this.state.inventory[idx].qty <= 0) {
+          this.state.inventory.splice(idx, 1);
+        }
+        this.saveState();
+        return true;
+      }
+
+      gainXp(amount) {
+        this.state.xp += amount;
+        let leveledUp = false;
+        while (this.state.xp >= this.state.nextXp) {
+          this.state.xp -= this.state.nextXp;
+          this.state.level += 1;
+          this.state.nextXp = Math.floor(this.state.nextXp * 1.45);
+          this.state.statPoints += 2;
+          const calc = this.getComputedStats();
+          this.state.hp = calc.maxHp;
+          leveledUp = true;
+        }
+        if (leveledUp) {
+          this.haptic('success');
+          this.showToast(`🔥 Уровень повышен до ${this.state.level}! Получено +2 очка характеристик.`, 'gold');
+        }
+        this.saveState();
+      }
+
+      // Toast Notification
+      showToast(message, variant = 'default') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        let borderClass = 'border-stone-700 bg-[#1c1917] text-stone-200';
+        if (variant === 'gold') borderClass = 'border-[#d4af37] bg-[#292524] text-[#d4af37]';
+        if (variant === 'red') borderClass = 'border-red-700 bg-red-950/95 text-red-200';
+        if (variant === 'emerald') borderClass = 'border-emerald-600 bg-emerald-950/95 text-emerald-200';
+
+        toast.className = `px-3.5 py-2 rounded-xl border shadow-xl text-xs font-medium flex items-center justify-between transition-all duration-300 ${borderClass}`;
+        toast.innerHTML = `<span>${message}</span>`;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(-8px)';
+          setTimeout(() => toast.remove(), 280);
+        }, 2400);
+      }
+
+      // Modal Window Helper
+      openModal(title, bodyHtml, actionsHtml) {
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('modal-body').innerHTML = bodyHtml;
+        document.getElementById('modal-actions').innerHTML = actionsHtml;
+        document.getElementById('modal-overlay').classList.remove('hidden');
+      }
+
+      closeModal() {
+        this.haptic('light');
+        document.getElementById('modal-overlay').classList.add('hidden');
+      }
+
+      // Screen Shake Effect
+      triggerScreenShake() {
+        const root = document.getElementById('app-root');
+        root.classList.remove('shake-screen');
+        void root.offsetWidth;
+        root.classList.add('shake-screen');
+      }
+
+      // Floating Damage Text Effect
+      spawnFloatingText(text, colorClass = 'text-red-400 text-lg') {
+        const layer = document.getElementById('floating-dmg-layer');
+        if (!layer) return;
+        const el = document.createElement('div');
+        const offsetX = Math.floor(Math.random() * 50) - 25;
+        el.className = `floating-dmg ${colorClass}`;
+        el.style.marginLeft = `${offsetX}px`;
+        el.textContent = text;
+        layer.appendChild(el);
+        setTimeout(() => el.remove(), 1050);
+      }
+
+      // Navigation Tab Switching
+      switchTab(tabId) {
+        this.haptic('light');
+        this.activeTab = tabId;
+        ['town', 'combat', 'hero', 'forge'].forEach(t => {
+          const section = document.getElementById(`tab-${t}`);
+          const navBtn = document.getElementById(`nav-btn-${t}`);
+          if (t === tabId) {
+            section.classList.remove('hidden');
+            navBtn.className = 'medieval-btn relative flex flex-col items-center justify-center py-1.5 rounded-lg text-[#d4af37] bg-[#292524]/80 border border-[#d4af37]/40';
+          } else {
+            section.classList.add('hidden');
+            navBtn.className = 'medieval-btn relative flex flex-col items-center justify-center py-1.5 rounded-lg text-stone-400 border border-transparent';
+          }
+        });
+        this.renderAll();
+      }
+
+      // ==================== TAB 1 LOGIC: TAVERN, DICE, QUESTS ====================
+      restAtTavern() {
+        const calc = this.getComputedStats();
+        const restCost = 10 + this.state.level * 5;
+        if (this.state.hp >= calc.maxHp) {
+          this.haptic('warning');
+          this.showToast('Ты уже полон сил и не нуждаешься в перевязке.', 'default');
+          return;
+        }
+        if (this.state.gold < restCost) {
+          this.haptic('error');
+          this.showToast(`Не хватает золота на постой (нужно ${restCost} з.).`, 'red');
+          return;
+        }
+        this.state.gold -= restCost;
+        this.state.hp = calc.maxHp;
+        this.haptic('success');
+        this.saveState();
+        this.renderAll();
+        this.showToast('🔥 Тепло камина и эль восстановили твоё здоровье полностью!', 'emerald');
+      }
+
+      setDiceBet(amount) {
+        this.haptic('light');
+        this.diceBet = amount;
+        [10, 25, 50, 100].forEach(val => {
+          const btn = document.getElementById(`bet-btn-${val}`);
+          if (val === amount) {
+            btn.className = 'medieval-btn py-1.5 rounded text-xs font-bold border border-[#d4af37] bg-[#292524] text-[#d4af37]';
+          } else {
+            btn.className = 'medieval-btn py-1.5 rounded text-xs font-bold border border-stone-700 bg-[#12100e] text-stone-400';
+          }
+        });
+        document.getElementById('current-bet-label').textContent = amount;
+      }
+
+      playDice() {
+        if (this.state.gold < this.diceBet) {
+          this.haptic('error');
+          this.showToast('В твоём кошеле недостаточно монет для такой ставки!', 'red');
+          return;
+        }
+
+        this.haptic('medium');
+        const faces = ['one', 'two', 'three', 'four', 'five', 'six'];
+        const p1 = Math.floor(Math.random() * 6) + 1;
+        const p2 = Math.floor(Math.random() * 6) + 1;
+        const k1 = Math.floor(Math.random() * 6) + 1;
+        const k2 = Math.floor(Math.random() * 6) + 1;
+
+        const pSum = p1 + p2;
+        const kSum = k1 + k2;
+
+        const pBox = document.getElementById('player-dice-box');
+        const kBox = document.getElementById('keeper-dice-box');
+
+        pBox.classList.add('rolling-dice');
+        kBox.classList.add('rolling-dice');
+        setTimeout(() => {
+          pBox.classList.remove('rolling-dice');
+          kBox.classList.remove('rolling-dice');
+        }, 450);
+
+        pBox.innerHTML = `<i class="fa-solid fa-dice-${faces[p1 - 1]}"></i><i class="fa-solid fa-dice-${faces[p2 - 1]}"></i>`;
+        kBox.innerHTML = `<i class="fa-solid fa-dice-${faces[k1 - 1]}"></i><i class="fa-solid fa-dice-${faces[k2 - 1]}"></i>`;
+
+        document.getElementById('player-dice-sum').textContent = `Сумма: ${pSum}`;
+        document.getElementById('keeper-dice-sum').textContent = `Сумма: ${kSum}`;
+
+        const msgEl = document.getElementById('dice-result-msg');
+        if (pSum > kSum) {
+          this.state.gold += this.diceBet;
+          this.haptic('success');
+          msgEl.className = 'text-center text-xs text-emerald-400 font-semibold mb-2.5 min-h-[18px]';
+          msgEl.textContent = `Победа! (${pSum} против ${kSum}). Ты забираешь +${this.diceBet} золота!`;
+        } else if (pSum < kSum) {
+          this.state.gold -= this.diceBet;
+          this.haptic('warning');
+          msgEl.className = 'text-center text-xs text-red-400 font-semibold mb-2.5 min-h-[18px]';
+          msgEl.textContent = `Увы! Трактирщик выбросил ${kSum} против твоих ${pSum}. Потеряно ${this.diceBet} з.`;
+        } else {
+          msgEl.className = 'text-center text-xs text-[#d4af37] font-semibold mb-2.5 min-h-[18px]';
+          msgEl.textContent = `Ничья (${pSum} : ${kSum})! Монеты остаются при своих.`;
+        }
+
+        this.saveState();
+        this.renderHUD();
+      }
+
+      refreshQuests() {
+        this.haptic('light');
+        const shuffled = [...QUEST_POOL].sort(() => Math.random() - 0.5);
+        this.state.activeQuests = shuffled.slice(0, 3).map(q => q.id);
+        this.saveState();
+        this.renderTown();
+        this.showToast('Староста вывесил свежие поручения на доску.', 'default');
+      }
+
+      attemptQuest(questId) {
+        const quest = QUEST_POOL.find(q => q.id === questId);
+        if (!quest) return;
+
+        const playerStatVal = this.state.stats[quest.stat] || 5;
+        // Calculate success chance: base 55% + (playerStat - difficulty) * 10%
+        const chance = Math.max(20, Math.min(95, 65 + (playerStatVal - quest.difficulty) * 10));
+        const roll = Math.random() * 100;
+
+        if (roll <= chance) {
+          this.haptic('success');
+          this.state.gold += quest.rewardGold;
+          let extraRewardHtml = '';
+          if (quest.rewardItem) {
+            this.addItem(quest.rewardItem, 1);
+            const itemObj = ITEM_CATALOG[quest.rewardItem];
+            extraRewardHtml = `<div class="text-emerald-400 font-semibold">+1 ${itemObj.name}</div>`;
+          }
+          this.gainXp(quest.rewardXp);
+          this.state.activeQuests = this.state.activeQuests.filter(id => id !== questId);
+
+          this.openModal(
+            `✅ Успех: ${quest.title}`,
+            `<p>${quest.successText}</p>
+             <div class="bg-[#12100e] border border-stone-800 rounded-lg p-2.5 mt-2 space-y-1">
+               <div class="text-[#d4af37] font-bold">+${quest.rewardGold} золотых крон</div>
+               <div class="text-amber-300 font-semibold">+${quest.rewardXp} опыта</div>
+               ${extraRewardHtml}
+             </div>`,
+            `<button onclick="app.closeModal()" class="medieval-btn w-full bg-[#292524] border border-[#d4af37] text-[#d4af37] font-medieval text-xs font-bold py-2.5 rounded-lg">Забрать награду</button>`
+          );
+        } else {
+          this.haptic('error');
+          this.triggerScreenShake();
+          const consolationGold = Math.floor(quest.rewardGold * 0.25);
+          this.state.gold += consolationGold;
+          this.state.hp = Math.max(1, this.state.hp - quest.failDmg);
+          this.state.activeQuests = this.state.activeQuests.filter(id => id !== questId);
+
+          this.openModal(
+            `⚠️ Испытание провалено`,
+            `<p>${quest.failText}</p>
+             <div class="bg-[#12100e] border border-red-900/50 rounded-lg p-2.5 mt-2 space-y-1">
+               <div class="text-red-400 font-bold">Потеряно здоровья: -${quest.failDmg} HP</div>
+               <div class="text-stone-400">Утешительная плата: +${consolationGold} золота</div>
+             </div>`,
+            `<button onclick="app.closeModal()" class="medieval-btn w-full bg-stone-800 border border-stone-600 text-stone-200 font-medieval text-xs font-bold py-2.5 rounded-lg">Продолжить</button>`
+          );
+        }
+
+        if (this.state.activeQuests.length === 0) {
+          this.refreshQuests();
+        }
+        this.saveState();
+        this.renderAll();
+      }
+
+      // ==================== TAB 2 LOGIC: TURN-BASED COMBAT ====================
+      startDungeon(dungeonId) {
+        const dungeon = DUNGEONS.find(d => d.id === dungeonId);
+        if (!dungeon) return;
+
+        if (this.state.hp <= 10) {
+          this.haptic('error');
+          this.showToast('Ты едва стоишь на ногах! Отдохни у камина или выпей эликсир.', 'red');
+          return;
+        }
+
+        this.haptic('medium');
+        const template = dungeon.enemies[Math.floor(Math.random() * dungeon.enemies.length)];
+        this.combat = {
+          dungeonId: dungeon.id,
+          dungeonName: dungeon.name,
+          round: 1,
+          defending: false,
+          enemy: {
+            ...template,
+            maxHp: template.hp,
+            currentHp: template.hp
+          },
+          logs: [
+            `⚔️ На тропе локации «${dungeon.name}» появляется ${template.name} (Ур. ${template.level})!`
+          ]
+        };
+
+        this.renderCombat();
+      }
+
+      appendCombatLog(htmlLine) {
+        if (!this.combat) return;
+        this.combat.logs.unshift(htmlLine);
+        const box = document.getElementById('combat-log-box');
+        if (box) {
+          box.innerHTML = this.combat.logs.map(l => `<div class="border-b border-stone-800/70 pb-1">${l}</div>`).join('');
+        }
+      }
+
+      combatAction(actionType) {
+        if (!this.combat) return;
+        const calc = this.getComputedStats();
+        const enemy = this.combat.enemy;
+        this.combat.defending = false;
+
+        // 1. Player Turn
+        if (actionType === 'quick') {
+          // High accuracy (95%), normal dmg, +15% bonus crit
+          const hitRoll = Math.random() * 100;
+          if (hitRoll <= 95) {
+            const isCrit = (Math.random() * 100) <= (calc.critChance + 15);
+            let dmg = Math.floor(Math.random() * (calc.maxAtk - calc.minAtk + 1)) + calc.minAtk;
+            if (isCrit) dmg = Math.round(dmg * 1.75);
+
+            enemy.currentHp = Math.max(0, enemy.currentHp - dmg);
+            if (isCrit) {
+              this.haptic('heavy');
+              this.triggerScreenShake();
+              this.spawnFloatingText(`КРИТ! -${dmg}`, 'text-amber-400 text-xl');
+              this.appendCombatLog(`<span class="text-amber-400 font-bold">⚡ Критический выпад!</span> Ты рассекаешь защиту врага на <b>${dmg}</b> ед. урона.`);
+            } else {
+              this.haptic('light');
+              this.spawnFloatingText(`-${dmg}`, 'text-red-400 text-lg');
+              this.appendCombatLog(`🗡 Быстрый выпад наносит <b>${dmg}</b> ед. урона.`);
+            }
+          } else {
+            this.haptic('warning');
+            this.spawnFloatingText('ПРОМАХ', 'text-stone-400 text-base');
+            this.appendCombatLog(`<span class="text-stone-400">Промах! ${enemy.name} уходит с линии атаки.</span>`);
+          }
+        } else if (actionType === 'heavy') {
+          // Heavy strike: 72% accuracy, 165% damage
+          const hitRoll = Math.random() * 100;
+          if (hitRoll <= 72) {
+            const isCrit = (Math.random() * 100) <= calc.critChance;
+            let dmg = Math.round((Math.floor(Math.random() * (calc.maxAtk - calc.minAtk + 1)) + calc.minAtk) * 1.65);
+            if (isCrit) dmg = Math.round(dmg * 1.8);
+
+            enemy.currentHp = Math.max(0, enemy.currentHp - dmg);
+            this.haptic('heavy');
+            this.triggerScreenShake();
+            if (isCrit) {
+              this.spawnFloatingText(`СОКРУШЕНИЕ! -${dmg}`, 'text-amber-300 text-xl');
+              this.appendCombatLog(`<span class="text-amber-300 font-bold">💥 СОКРУШИТЕЛЬНЫЙ КРИТ!</span> Тяжёлый удар сносит <b>${dmg}</b> HP!`);
+            } else {
+              this.spawnFloatingText(`-${dmg}`, 'text-red-500 text-xl');
+              this.appendCombatLog(`🪓 Тяжёлый удар пробивает броню на <b>${dmg}</b> ед. урона!`);
+            }
+          } else {
+            this.haptic('warning');
+            this.spawnFloatingText('ПРОМАХ!', 'text-stone-400 text-base');
+            this.appendCombatLog(`<span class="text-stone-400">Тяжёлый клинок увяз в воздухе — промах!</span>`);
+          }
+        } else if (actionType === 'defend') {
+          this.combat.defending = true;
+          const regen = Math.max(8, Math.round(calc.maxHp * 0.15));
+          this.state.hp = Math.min(calc.maxHp, this.state.hp + regen);
+          this.haptic('medium');
+          this.spawnFloatingText(`ЩИТ +${regen} HP`, 'text-sky-400 text-base');
+          this.appendCombatLog(`<span class="text-sky-400">🛡 Глухая оборона:</span> ты восстанавливаешь <b>+${regen} HP</b> и снижаешь урон на 60%.`);
+        } else if (actionType === 'potion') {
+          const potQty = this.getItemQty('healing_elixir');
+          if (potQty <= 0) {
+            this.haptic('error');
+            this.showToast('В сумке закончились Алые эликсиры!', 'red');
+            return;
+          }
+          this.removeItem('healing_elixir', 1);
+          const healAmount = 55 + Math.round(calc.maxHp * 0.25);
+          this.state.hp = Math.min(calc.maxHp, this.state.hp + healAmount);
+          this.haptic('success');
+          this.spawnFloatingText(`+${healAmount} HP`, 'text-emerald-400 text-lg');
+          this.appendCombatLog(`<span class="text-emerald-400">🧪 Выпит Алый эликсир:</span> восстановлено <b>+${healAmount} HP</b>.`);
+        }
+
+        // Check if Enemy is Defeated
+        if (enemy.currentHp <= 0) {
+          this.handleVictory();
+          return;
+        }
+
+        // 2. Enemy Counter-Attack
+        const dodgeRoll = Math.random() * 100;
+        if (dodgeRoll <= calc.dodgeChance) {
+          this.appendCombatLog(`<span class="text-emerald-400">💨 Уклонение! Ты ловко ушёл от удара «${enemy.name}».</span>`);
+        } else {
+          let rawEnemyDmg = Math.floor(Math.random() * (enemy.maxDmg - enemy.minDmg + 1)) + enemy.minDmg;
+          const enemyCrit = (Math.random() * 100) <= 10;
+          if (enemyCrit) rawEnemyDmg = Math.round(rawEnemyDmg * 1.5);
+
+          // Apply armor reduction & defensive stance
+          let finalDmg = Math.max(2, rawEnemyDmg - calc.defense);
+          if (this.combat.defending) {
+            finalDmg = Math.max(1, Math.round(finalDmg * 0.4));
+          }
+
+          this.state.hp = Math.max(0, this.state.hp - finalDmg);
+          if (enemyCrit) {
+            this.triggerScreenShake();
+            this.haptic('heavy');
+            this.appendCombatLog(`<span class="text-red-400 font-bold">🩸 Вражеский крит!</span> ${enemy.name} наносит <b>${finalDmg}</b> урона!`);
+          } else {
+            this.appendCombatLog(`👹 ${enemy.name} атакует и наносит <b>${finalDmg}</b> ед. урона.`);
+          }
+        }
+
+        // Check if Player was Defeated
+        if (this.state.hp <= 0) {
+          this.handleDefeat();
+          return;
+        }
+
+        this.combat.round += 1;
+        this.saveState();
+        this.renderHUD();
+        this.renderCombat();
+      }
+
+      handleVictory() {
+        const enemy = this.combat.enemy;
+        const goldWon = Math.floor(Math.random() * (enemy.gold[1] - enemy.gold[0] + 1)) + enemy.gold[0];
+        const trophyItem = ITEM_CATALOG[enemy.trophy];
+
+        this.state.gold += goldWon;
+        this.state.monstersSlain = (this.state.monstersSlain || 0) + 1;
+        this.addItem(enemy.trophy, 1);
+        this.gainXp(enemy.xp);
+
+        this.haptic('success');
+        const finishedEnemyName = enemy.name;
+        const finishedXp = enemy.xp;
+        this.combat = null;
+        this.saveState();
+        this.renderAll();
+
+        this.openModal(
+          '⚔️ Враг повержен!',
+          `<p>Ты одержал верх над противником <b>${finishedEnemyName}</b> и обыскал поле боя.</p>
+           <div class="bg-[#12100e] border border-stone-800 rounded-lg p-3 mt-2 space-y-1.5">
+             <div class="text-[#d4af37] font-bold flex items-center gap-2"><i class="fa-solid fa-coins"></i> +${goldWon} золотых крон</div>
+             <div class="text-amber-300 font-semibold flex items-center gap-2"><i class="fa-solid fa-star"></i> +${finishedXp} опыта</div>
+             <div class="text-emerald-400 font-semibold flex items-center gap-2"><i class="fa-solid ${trophyItem.icon}"></i> Трофей: ${trophyItem.name}</div>
+           </div>`,
+          `<button onclick="app.closeModal()" class="medieval-btn w-full bg-[#292524] border border-[#d4af37] text-[#d4af37] font-medieval text-xs font-bold py-2.5 rounded-lg">Продолжить поход</button>`
+        );
+      }
+
+      handleDefeat() {
+        const lostGold = Math.min(this.state.gold, Math.floor(this.state.gold * 0.2));
+        this.state.gold -= lostGold;
+        const calc = this.getComputedStats();
+        this.state.hp = Math.max(15, Math.round(calc.maxHp * 0.35));
+        this.combat = null;
+
+        this.haptic('error');
+        this.triggerScreenShake();
+        this.saveState();
+        this.switchTab('town');
+
+        this.openModal(
+          '💀 Поражение в бою',
+          `<p>Тяжёлая рана повалила тебя на сырую землю. Ночной дозор подобрал тебя у дороги и доставил в таверну Вороньего Брода.</p>
+           <div class="bg-[#12100e] border border-red-900/60 rounded-lg p-3 mt-2 space-y-1">
+             <div class="text-red-400 font-bold">Потеряно при отступлении: -${lostGold} золота</div>
+             <div class="text-stone-300">Здоровье частично перевязано лекарем.</div>
+           </div>`,
+          `<button onclick="app.closeModal()" class="medieval-btn w-full bg-stone-800 border border-stone-600 text-stone-100 font-medieval text-xs font-bold py-2.5 rounded-lg">Очнуться в таверне</button>`
+        );
+      }
+
+      retreatCombat() {
+        if (!this.combat) return;
+        this.haptic('warning');
+        this.combat = null;
+        this.renderCombat();
+        this.showToast('Ты благоразумно отступил в тень.', 'default');
+      }
+
+      // ==================== TAB 3 LOGIC: HERO, INVENTORY, STATS ====================
+      upgradeStat(statKey) {
+        if (this.state.statPoints <= 0) {
+          this.haptic('warning');
+          this.showToast('Нет свободных очков характеристик. Повышай уровень в боях!', 'default');
+          return;
+        }
+        this.haptic('medium');
+        this.state.statPoints -= 1;
+        this.state.stats[statKey] += 1;
+        if (statKey === 'vit') {
+          this.state.hp += 18;
+        }
+        this.saveState();
+        this.renderAll();
+      }
+
+      useOrEquipItem(itemId) {
+        const item = ITEM_CATALOG[itemId];
+        if (!item) return;
+
+        if (item.type === 'potion') {
+          const calc = this.getComputedStats();
+          if (this.state.hp >= calc.maxHp) {
+            this.haptic('warning');
+            this.showToast('Здоровье уже полностью восстановлено.', 'default');
+            return;
+          }
+          if (this.removeItem(itemId, 1)) {
+            const healAmount = item.heal + Math.round(calc.maxHp * 0.25);
+            this.state.hp = Math.min(calc.maxHp, this.state.hp + healAmount);
+            this.haptic('success');
+            this.saveState();
+            this.renderAll();
+            this.showToast(`🧪 Выпит ${item.name}: +${healAmount} HP`, 'emerald');
+          }
+          return;
+        }
+
+        if (['weapon', 'armor', 'amulet'].includes(item.type)) {
+          this.haptic('medium');
+          const prevEquipped = this.state.equipped[item.type];
+          if (!this.removeItem(itemId, 1)) return;
+          if (prevEquipped) {
+            this.addItem(prevEquipped, 1);
+          }
+          this.state.equipped[item.type] = itemId;
+          const calc = this.getComputedStats();
+          this.state.hp = Math.min(this.state.hp, calc.maxHp);
+          this.saveState();
+          this.renderAll();
+          this.showToast(`Надето: ${item.name}`, 'gold');
+        }
+      }
+
+      unequipSlot(slotKey) {
+        const currentId = this.state.equipped[slotKey];
+        if (!currentId) return;
+        this.haptic('light');
+        const item = ITEM_CATALOG[currentId];
+        this.state.equipped[slotKey] = null;
+        this.addItem(currentId, 1);
+        const calc = this.getComputedStats();
+        this.state.hp = Math.min(this.state.hp, calc.maxHp);
+        this.saveState();
+        this.renderAll();
+        this.showToast(`Снято в сумку: ${item.name}`, 'default');
+      }
+
+      // ==================== TAB 4 LOGIC: FORGE & SHOP ====================
+      setShopFilter(filter) {
+        this.haptic('light');
+        this.shopFilter = filter;
+        ['all', 'weapon', 'armor', 'alchemy'].forEach(f => {
+          const btn = document.getElementById(`shop-tab-${f}`);
+          if (f === filter) {
+            btn.className = 'medieval-btn py-1.5 rounded-lg text-xs font-medieval font-bold border border-[#d4af37] bg-[#292524] text-[#d4af37]';
+          } else {
+            btn.className = 'medieval-btn py-1.5 rounded-lg text-xs font-medieval font-bold border border-stone-800 bg-[#1c1917] text-stone-400';
+          }
+        });
+        this.renderForge();
+      }
+
+      buyItem(itemId) {
+        const item = ITEM_CATALOG[itemId];
+        if (!item) return;
+        if (this.state.gold < item.price) {
+          this.haptic('error');
+          this.showToast(`Не хватает золота! Нужно ${item.price} з.`, 'red');
+          return;
+        }
+        this.state.gold -= item.price;
+        this.addItem(itemId, 1);
+        this.haptic('success');
+        this.saveState();
+        this.renderAll();
+        this.showToast(`Куплено: ${item.name} (-${item.price} з.)`, 'gold');
+      }
+
+      sellItem(itemId) {
+        const item = ITEM_CATALOG[itemId];
+        if (!item) return;
+        const sellValue = item.type === 'trophy' ? item.price : Math.max(5, Math.floor(item.price * 0.5));
+        if (this.removeItem(itemId, 1)) {
+          this.state.gold += sellValue;
+          this.haptic('medium');
+          this.saveState();
+          this.renderAll();
+          this.showToast(`Продано: ${item.name} (+${sellValue} з.)`, 'gold');
+        }
+      }
+
+      sellAllTrophies() {
+        let totalGold = 0;
+        let totalCount = 0;
+        const remaining = [];
+
+        for (const entry of this.state.inventory) {
+          const meta = ITEM_CATALOG[entry.id];
+          if (meta && meta.type === 'trophy') {
+            totalGold += meta.price * entry.qty;
+            totalCount += entry.qty;
+          } else {
+            remaining.push(entry);
+          }
+        }
+
+        if (totalCount === 0) {
+          this.haptic('warning');
+          this.showToast('В сумке нет охотничьих трофеев для продажи.', 'default');
+          return;
+        }
+
+        this.state.inventory = remaining;
+        this.state.gold += totalGold;
+        this.haptic('success');
+        this.saveState();
+        this.renderAll();
+        this.showToast(`Продано трофеев: ${totalCount} шт. на сумму +${totalGold} з.!`, 'gold');
+      }
+
+      // Send Player Summary back to Telegram Bot
+      sendDataToBot() {
+        this.haptic('medium');
+        const calc = this.getComputedStats();
+        const payload = {
+          action: 'sync_chronicle',
+          hero_name: this.state.name,
+          level: this.state.level,
+          gold: this.state.gold,
+          monsters_slain: this.state.monstersSlain || 0,
+          power_rating: calc.powerRating,
+          weapon: ITEM_CATALOG[this.state.equipped.weapon]?.name || 'Без оружия',
+          armor: ITEM_CATALOG[this.state.equipped.armor]?.name || 'Без доспеха'
+        };
+
+        if (this.tg && typeof this.tg.sendData === 'function') {
+          try {
+            this.tg.sendData(JSON.stringify(payload));
+            this.showToast('Ворон с летописью отправлен в Telegram-бот!', 'gold');
+          } catch (e) {
+            this.showToast('Сводка сформирована (открыто через Inline-кнопку).', 'gold');
+          }
+        } else {
+          this.showToast('Демо-режим вне Telegram: данные летописи сохранены локально.', 'gold');
+        }
+      }
+
+      resetProgress() {
+        this.openModal(
+          'Сброс летописи',
+          '<p>Ты уверен, что хочешь стереть текущее сохранение и начать путь заново?</p>',
+          `<div class="grid grid-cols-2 gap-2">
+            <button onclick="app.closeModal()" class="medieval-btn py-2 rounded-lg bg-stone-800 text-stone-300 text-xs font-bold">Отмена</button>
+            <button onclick="app.confirmReset()" class="medieval-btn py-2 rounded-lg bg-red-900 border border-red-600 text-stone-100 text-xs font-bold">Сбросить</button>
+          </div>`
+        );
+      }
+
+      confirmReset() {
+        localStorage.removeItem(STORAGE_KEY);
+        this.combat = null;
+        this.state = this.getDefaultState();
+        this.closeModal();
+        this.switchTab('town');
+        this.showToast('Начата новая глава странствий.', 'gold');
+      }
+
+      // ==================== RENDERING METHODS ====================
+      renderHUD() {
+        const calc = this.getComputedStats();
+        if (this.state.hp > calc.maxHp) this.state.hp = calc.maxHp;
+
+        document.getElementById('hud-player-name').textContent = this.state.name;
+        document.getElementById('hud-level-badge').textContent = `Ур.${this.state.level}`;
+        document.getElementById('hud-player-title').innerHTML = `Страж Пепла • Атака: <span class="text-[#d4af37] font-semibold">${calc.minAtk}–${calc.maxAtk}</span>`;
+        document.getElementById('hud-gold').textContent = this.state.gold;
+        document.getElementById('hud-potions').textContent = this.getItemQty('healing_elixir');
+
+        // HP & XP Bars
+        const hpPct = Math.max(0, Math.min(100, Math.round((this.state.hp / calc.maxHp) * 100)));
+        const xpPct = Math.max(0, Math.min(100, Math.round((this.state.xp / this.state.nextXp) * 100)));
+
+        document.getElementById('hud-hp-text').textContent = `${this.state.hp} / ${calc.maxHp}`;
+        document.getElementById('hud-hp-bar').style.width = `${hpPct}%`;
+        document.getElementById('hud-xp-text').textContent = `${this.state.xp} / ${this.state.nextXp}`;
+        document.getElementById('hud-xp-bar').style.width = `${xpPct}%`;
+
+        // Unspent Stat Points Alert
+        const alertEl = document.getElementById('hud-stat-alert');
+        const navDot = document.getElementById('nav-hero-dot');
+        if (this.state.statPoints > 0) {
+          alertEl.classList.remove('hidden');
+          alertEl.textContent = `+${this.state.statPoints} Очк.`;
+          navDot.classList.remove('hidden');
+        } else {
+          alertEl.classList.add('hidden');
+          navDot.classList.add('hidden');
+        }
+      }
+
+      renderTown() {
+        const restCost = 10 + this.state.level * 5;
+        document.getElementById('rest-cost-badge').innerHTML = `${restCost} <i class="fa-solid fa-coins text-[10px]"></i>`;
+
+        const boardEl = document.getElementById('quest-board-list');
+        const activeQuests = this.state.activeQuests
+          .map(id => QUEST_POOL.find(q => q.id === id))
+          .filter(Boolean);
+
+        boardEl.innerHTML = activeQuests.map(q => {
+          const playerStatVal = this.state.stats[q.stat] || 5;
+          const chance = Math.max(20, Math.min(95, 65 + (playerStatVal - q.difficulty) * 10));
+          const chanceColor = chance >= 75 ? 'text-emerald-400' : (chance >= 50 ? 'text-amber-400' : 'text-red-400');
+
+          return `
+            <div class="bg-[#12100e] border border-stone-800 rounded-xl p-3 space-y-2">
+              <div class="flex items-start justify-between gap-2">
+                <h4 class="font-medieval text-xs font-bold text-stone-100">${q.title}</h4>
+                <span class="text-[10px] px-2 py-0.5 rounded bg-[#292524] border border-stone-700 ${chanceColor} font-semibold shrink-0">
+                  ${q.statName}: ${chance}%
+                </span>
+              </div>
+              <p class="text-[11px] text-stone-400 leading-relaxed">${q.desc}</p>
+              <div class="flex items-center justify-between pt-1">
+                <div class="text-[11px] text-[#d4af37] font-semibold">
+                  Награда: +${q.rewardGold} з. • +${q.rewardXp} XP
+                </div>
+                <button onclick="app.attemptQuest('${q.id}')" class="medieval-btn bg-[#292524] hover:bg-stone-700 border border-[#d4af37]/50 text-stone-100 text-[11px] font-medieval font-bold px-3 py-1.5 rounded-lg">
+                  Выполнить
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      renderCombat() {
+        const selectView = document.getElementById('dungeon-select-view');
+        const combatView = document.getElementById('active-combat-view');
+
+        if (!this.combat) {
+          selectView.classList.remove('hidden');
+          combatView.classList.add('hidden');
+
+          const listEl = document.getElementById('locations-list');
+          listEl.innerHTML = DUNGEONS.map(d => `
+            <div class="medieval-card rounded-xl p-3.5 space-y-2.5">
+              <div class="flex items-start justify-between gap-2.5">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-11 h-11 rounded-xl bg-[#12100e] border border-stone-700 flex items-center justify-center text-[#d4af37] text-lg shrink-0">
+                    <i class="fa-solid ${d.icon}"></i>
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <h3 class="font-medieval text-sm font-bold text-stone-100">${d.name}</h3>
+                    </div>
+                    <span class="inline-block text-[10px] font-semibold px-2 py-0.5 rounded border mt-0.5 ${d.diffColor}">
+                      ${d.difficulty} • ${d.recLevel}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <p class="text-xs text-stone-400 leading-relaxed">${d.desc}</p>
+              <button onclick="app.startDungeon('${d.id}')" class="medieval-btn w-full bg-gradient-to-r from-[#7f1d1d] to-[#991b1b] hover:from-red-800 hover:to-red-700 border border-red-500/50 text-stone-100 font-medieval text-xs font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 shadow">
+                <i class="fa-solid fa-swords"></i> Отправиться в вылазку
+              </button>
+            </div>
+          `).join('');
+          return;
+        }
+
+        // Active Combat Rendering
+        selectView.classList.add('hidden');
+        combatView.classList.remove('hidden');
+
+        const enemy = this.combat.enemy;
+        const calc = this.getComputedStats();
+        const potQty = this.getItemQty('healing_elixir');
+        const healPreview = 55 + Math.round(calc.maxHp * 0.25);
+
+        document.getElementById('combat-location-name').textContent = this.combat.dungeonName;
+        document.getElementById('combat-round-indicator').textContent = `Раунд ${this.combat.round} • Выбери манёвр`;
+        document.getElementById('enemy-tier-badge').textContent = `Ур. ${enemy.level}`;
+        document.getElementById('enemy-intent-badge').innerHTML = `<i class="fa-solid fa-skull"></i> Урон: ${enemy.minDmg}–${enemy.maxDmg}`;
+        document.getElementById('enemy-icon').className = `fa-solid ${enemy.icon} text-4xl text-red-500`;
+        document.getElementById('enemy-name').textContent = enemy.name;
+        document.getElementById('enemy-lore').textContent = enemy.lore;
+
+        const eHpPct = Math.max(0, Math.min(100, Math.round((enemy.currentHp / enemy.maxHp) * 100)));
+        document.getElementById('enemy-hp-text').textContent = `${enemy.currentHp} / ${enemy.maxHp}`;
+        document.getElementById('enemy-hp-bar').style.width = `${eHpPct}%`;
+
+        document.getElementById('combat-potion-sub').textContent = `+${healPreview} HP (В сумке: ${potQty})`;
+
+        const logBox = document.getElementById('combat-log-box');
+        logBox.innerHTML = this.combat.logs.map(l => `<div class="border-b border-stone-800/70 pb-1">${l}</div>`).join('');
+      }
+
+      renderHero() {
+        const calc = this.getComputedStats();
+        document.getElementById('hero-power-rating').textContent = `Боевая мощь: ${calc.powerRating}`;
+
+        // Render Equipped Slots
+        const slots = [
+          { key: 'weapon', emptyName: 'Без оружия', emptyStat: '+0 Урон', defaultIcon: 'fa-khanda' },
+          { key: 'armor', emptyName: 'Без доспеха', emptyStat: '+0 HP', defaultIcon: 'fa-shirt' },
+          { key: 'amulet', emptyName: 'Пусто', emptyStat: 'Нет оберега', defaultIcon: 'fa-ring' }
+        ];
+
+        slots.forEach(s => {
+          const itemId = this.state.equipped[s.key];
+          const item = itemId ? ITEM_CATALOG[itemId] : null;
+          const iconEl = document.getElementById(`slot-${s.key}-icon`);
+          const nameEl = document.getElementById(`slot-${s.key}-name`);
+          const statEl = document.getElementById(`slot-${s.key}-stat`);
+
+          if (item) {
+            iconEl.className = `fa-solid ${item.icon}`;
+            nameEl.textContent = item.name;
+            if (s.key === 'weapon') statEl.textContent = `+${item.atk} Урон • +${item.crit}% Крит`;
+            if (s.key === 'armor') statEl.textContent = `+${item.hp} HP • +${item.def} Защ`;
+            if (s.key === 'amulet') statEl.textContent = `+${item.atk || 0} Ур • +${item.crit || 0}% Крит`;
+          } else {
+            iconEl.className = `fa-solid ${s.defaultIcon} opacity-40`;
+            nameEl.textContent = s.emptyName;
+            statEl.textContent = s.emptyStat;
+          }
+        });
+
+        // Secondary stats
+        document.getElementById('stat-calc-atk').textContent = `${calc.minAtk}–${calc.maxAtk}`;
+        document.getElementById('stat-calc-def').textContent = `${calc.defense}`;
+        document.getElementById('stat-calc-crit').textContent = `${calc.critChance}%`;
+        document.getElementById('stat-calc-dodge').textContent = `${calc.dodgeChance}%`;
+
+        // Base Attributes
+        document.getElementById('stat-points-badge').textContent = `Свободные очки: ${this.state.statPoints}`;
+        document.getElementById('attr-str-val').textContent = this.state.stats.str;
+        document.getElementById('attr-vit-val').textContent = this.state.stats.vit;
+        document.getElementById('attr-agi-val').textContent = this.state.stats.agi;
+
+        ['str', 'vit', 'agi'].forEach(k => {
+          const btn = document.getElementById(`btn-up-${k}`);
+          btn.disabled = this.state.statPoints <= 0;
+        });
+
+        // Inventory Grid
+        const invGrid = document.getElementById('inventory-grid');
+        const totalItems = this.state.inventory.reduce((acc, i) => acc + i.qty, 0);
+        document.getElementById('inventory-count-label').textContent = `Предметов: ${totalItems}`;
+
+        if (this.state.inventory.length === 0) {
+          invGrid.innerHTML = `<div class="text-center text-xs text-stone-500 py-4">Сумка пуста. Загляни в Кузницу или отправляйся в Вылазку.</div>`;
+          return;
+        }
+
+        invGrid.innerHTML = this.state.inventory.map(entry => {
+          const item = ITEM_CATALOG[entry.id];
+          if (!item) return '';
+
+          let actionBtn = '';
+          if (['weapon', 'armor', 'amulet'].includes(item.type)) {
+            actionBtn = `<button onclick="app.useOrEquipItem('${item.id}')" class="medieval-btn bg-[#292524] border border-[#d4af37] text-[#d4af37] text-[11px] font-medieval font-bold px-3 py-1.5 rounded-lg">Надеть</button>`;
+          } else if (item.type === 'potion') {
+            actionBtn = `<button onclick="app.useOrEquipItem('${item.id}')" class="medieval-btn bg-emerald-950/80 border border-emerald-600 text-emerald-300 text-[11px] font-medieval font-bold px-3 py-1.5 rounded-lg">Выпить</button>`;
+          } else {
+            actionBtn = `<span class="text-[10px] text-stone-400">Трофей (${item.price} з.)</span>`;
+          }
+
+          return `
+            <div class="bg-[#12100e] border border-stone-800 rounded-xl p-2.5 flex items-center justify-between gap-2.5">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-9 h-9 rounded-lg bg-[#1c1917] border border-stone-700 flex items-center justify-center text-[#d4af37] shrink-0">
+                  <i class="fa-solid ${item.icon}"></i>
+                </div>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-stone-100 truncate">${item.name} <span class="text-[#d4af37]">x${entry.qty}</span></div>
+                  <div class="text-[10px] text-stone-400 truncate">${item.desc}</div>
+                </div>
+              </div>
+              <div class="shrink-0">${actionBtn}</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      renderForge() {
+        // Calculate trophies summary
+        let trophyCount = 0;
+        let trophyGold = 0;
+        this.state.inventory.forEach(entry => {
+          const meta = ITEM_CATALOG[entry.id];
+          if (meta && meta.type === 'trophy') {
+            trophyCount += entry.qty;
+            trophyGold += meta.price * entry.qty;
+          }
+        });
+
+        const summaryEl = document.getElementById('trophies-summary-text');
+        const sellBtn = document.getElementById('btn-sell-trophies');
+        if (trophyCount > 0) {
+          summaryEl.innerHTML = `Трофеев: <b class="text-stone-200">${trophyCount} шт.</b> на сумму <b class="text-[#d4af37]">${trophyGold} золота</b>`;
+          sellBtn.disabled = false;
+        } else {
+          summaryEl.textContent = 'Добудь трофеи с монстров в Вылазке для продажи';
+          sellBtn.disabled = true;
+        }
+
+        // Filter Shop Catalog (exclude trophies)
+        const shopItems = Object.values(ITEM_CATALOG).filter(item => {
+          if (item.type === 'trophy') return false;
+          if (this.shopFilter === 'all') return true;
+          if (this.shopFilter === 'weapon') return item.type === 'weapon';
+          if (this.shopFilter === 'armor') return item.type === 'armor' || item.type === 'amulet';
+          if (this.shopFilter === 'alchemy') return item.type === 'potion';
+          return true;
+        });
+
+        const listEl = document.getElementById('forge-shop-list');
+        listEl.innerHTML = shopItems.map(item => {
+          let statBadges = '';
+          if (item.atk) statBadges += `<span class="text-[10px] bg-red-950/60 border border-red-800/50 text-red-300 px-1.5 py-0.5 rounded">+${item.atk} Атк</span> `;
+          if (item.hp) statBadges += `<span class="text-[10px] bg-amber-950/60 border border-amber-800/50 text-amber-300 px-1.5 py-0.5 rounded">+${item.hp} HP</span> `;
+          if (item.def) statBadges += `<span class="text-[10px] bg-sky-950/60 border border-sky-800/50 text-sky-300 px-1.5 py-0.5 rounded">+${item.def} Защ</span> `;
+          if (item.crit) statBadges += `<span class="text-[10px] bg-purple-950/60 border border-purple-800/50 text-purple-300 px-1.5 py-0.5 rounded">+${item.crit}% Крит</span> `;
+          if (item.heal) statBadges += `<span class="text-[10px] bg-emerald-950/60 border border-emerald-800/50 text-emerald-300 px-1.5 py-0.5 rounded">+${item.heal} HP</span> `;
+
+          const ownedQty = this.getItemQty(item.id);
+          const isEquipped = Object.values(this.state.equipped).includes(item.id);
+
+          return `
+            <div class="medieval-card rounded-xl p-3 flex items-center justify-between gap-3">
+              <div class="flex items-start gap-2.5 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-[#12100e] border border-stone-700 flex items-center justify-center text-[#d4af37] text-base shrink-0 mt-0.5">
+                  <i class="fa-solid ${item.icon}"></i>
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <h4 class="font-medieval text-xs font-bold text-stone-100">${item.name}</h4>
+                    ${isEquipped ? '<span class="text-[9px] bg-[#d4af37]/20 text-[#d4af37] px-1.5 py-0.2 rounded">Надето</span>' : ''}
+                    ${ownedQty > 0 ? `<span class="text-[9px] bg-stone-800 text-stone-300 px-1.5 py-0.2 rounded">В сумке: ${ownedQty}</span>` : ''}
+                  </div>
+                  <p class="text-[11px] text-stone-400 mt-0.5 leading-snug">${item.desc}</p>
+                  <div class="mt-1.5 flex flex-wrap gap-1">${statBadges}</div>
+                </div>
+              </div>
+
+              <div class="flex flex-col items-end gap-1.5 shrink-0">
+                <button onclick="app.buyItem('${item.id}')" class="medieval-btn bg-[#292524] hover:bg-stone-700 border border-[#d4af37] text-[#d4af37] font-medieval text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1">
+                  <span>${item.price}</span> <i class="fa-solid fa-coins text-[10px]"></i>
+                </button>
+                ${ownedQty > 0 ? `<button onclick="app.sellItem('${item.id}')" class="text-[10px] text-stone-400 hover:text-amber-400 underline">Продать (${Math.max(5, Math.floor(item.price * 0.5))} з.)</button>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      renderAll() {
+        this.renderHUD();
+        this.renderTown();
+        this.renderCombat();
+        this.renderHero();
+        this.renderForge();
+      }
+    }
+
+    // Boot Application
+    window.addEventListener('DOMContentLoaded', () => {
+      window.app = new MedievalRPG();
+    });
+  </script>
+</body>
+</html>

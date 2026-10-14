@@ -38,7 +38,10 @@ from aiogram.types import (
 # КОНФИГУРАЦИЯ БОТА
 # =====================================================================
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8862224626:AAE5lZa-0hgnYUMTKIljaoJ5GlLTQdSrkL8")
-WEBAPP_URL = os.getenv("WEBAPP_URL", "https://your-domain.example.com/dark_medieval_rpg.html")
+WEBAPP_URL = os.getenv(
+    "WEBAPP_URL",
+    "https://aristovyura23123-commits.github.io/medieval-rpg/"
+)
 
 # Атмосферная иллюстрация темного средневековья для приветственного сообщения
 WELCOME_BANNER_URL = (
